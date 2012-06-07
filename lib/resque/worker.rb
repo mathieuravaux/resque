@@ -219,8 +219,21 @@ module Resque
     # Returns a list of queues to use when searching for a job.
     # A splat ("*") means you want every queue (in alpha order) - this
     # can be useful for dynamically adding new queues.
+    # We can also specify queues we don't want using ~ and a regexp (*,~processing or *,~processing:.*).
     def queues
-      @queues.map {|queue| queue == "*" ? Resque.queues.sort : queue }.flatten.uniq
+      forbidden_queues = [nil]
+      @queues.map do |queue|
+        case queue
+        when /^\~(.*)$/
+          forbiding_regex = Regexp::new($1)
+          forbidden_queues += Resque.queues.select {|v| v =~ forbiding_regex}
+          next
+        when "*"
+          Resque.queues.sort
+        else
+          queue
+        end
+      end.flatten.uniq - forbidden_queues
     end
 
     # Not every platform supports fork. Here we do our magic to

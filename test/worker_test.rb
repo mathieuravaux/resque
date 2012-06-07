@@ -91,6 +91,27 @@ describe "Resque::Worker" do
     assert_equal %w( critical high low ), worker.queues
   end
 
+  it "handles correctly the '*' for queues list" do
+    #add the queue cars to resque
+    Resque.push(:cars, { 'make' => 'bmw' })
+    queues = "*".split(',')
+    worker = Resque::Worker.new(*queues)
+    assert_equal %w( cars jobs ), worker.queues
+  end
+
+  it "handles correctly the '*~stuff' for queues list" do
+    #add the queue cars to resque
+    Resque.push(:cars, { 'make' => 'bmw' })
+    queues = "*,~cars".split(',')
+    worker = Resque::Worker.new(*queues)
+    assert_equal %w( jobs ), worker.queues
+
+    queues = "*,~cars,~jobs".split(',')
+    worker = Resque::Worker.new(*queues)
+    assert_equal %w( ), worker.queues
+  end
+
+
   it "can work on multiple queues" do
     Resque::Job.create(:high, GoodJob)
     Resque::Job.create(:critical, GoodJob)
